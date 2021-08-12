@@ -77,18 +77,9 @@ fun DefaultPreview2() {
             cells = GridCells.Adaptive(100.dp)
         ) {
             items(deck.draw(14)) {
-                PlayingCard(
-                    card = it,
-                    modifier = Modifier.padding(5.dp)
-                )
+                PlayingCard(card = it, modifier = Modifier.padding(5.dp))
             }
         }
-
-        /*Column {
-            PlayingCard(card = Card(1, Suit.SPADES))
-            Spacer(Modifier.height(5.dp))
-            PlayingCard(card = Card(10, Suit.SPADES))
-        }*/
 
     }
 }
@@ -165,14 +156,7 @@ fun Blackjack() {
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                if (scaffoldState.drawerState.isClosed) scaffoldState.drawerState.open()
-                                else scaffoldState.drawerState.close()
-                            }
-                        }
-                    ) { Icon(Icons.Default.Menu, null) }
+                    IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) { Icon(Icons.Default.Menu, null) }
                 },
                 title = { Text("Dealer has: ${dealerHand.toSum()}") },
                 actions = { Text("$cardCount card(s) left") }
@@ -256,7 +240,7 @@ fun Blackjack() {
                 items(playerHand) {
                     PlayingCard(
                         card = it,
-                        onClick = { playerHand.add(deck.draw()) },
+                        //onClick = { playerHand.add(deck.draw()) },
                         modifier = Modifier.padding(5.dp)
                     )
                 }
