@@ -5,23 +5,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.flowlayout.FlowRow
 import com.programmersbox.blackjackcompose.ui.theme.BlackjackComposeTheme
@@ -29,7 +23,6 @@ import com.programmersbox.funutils.cards.Card
 import com.programmersbox.funutils.cards.Deck
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     @ExperimentalMaterialApi
@@ -185,9 +178,7 @@ fun Blackjack() {
                 actions = { Text("$cardCount card(s) left") }
             )
         },
-        bottomBar = {
-            BottomAppBar { Text("Player has: ${playerHand.toSum()}", style = MaterialTheme.typography.h6) }
-        },
+        bottomBar = { BottomAppBar { Text("Player has: ${playerHand.toSum()}", style = MaterialTheme.typography.h6) } },
         drawerContent = {
             Scaffold(topBar = { TopAppBar(title = { Text("Stats") }) }) {
                 LazyColumn(
