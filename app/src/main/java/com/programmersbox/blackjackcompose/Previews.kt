@@ -32,8 +32,6 @@ fun DefaultPreview() {
 @Composable
 fun DefaultPreview2() {
     BlackjackComposeTheme {
-        //Greeting("Android")J
-
         val deck = Deck.defaultDeck()
 
         LazyVerticalGrid(

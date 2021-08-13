@@ -210,7 +210,7 @@ fun Blackjack() {
                     onClick = {
                         playing = false
                         scope.launch {
-                            while (dealerHand.toSum() <= 17) {
+                            while (dealerHand.toSum() < 17) {
                                 dealerHand.add(deck.draw())
                                 delay(500)
                             }
