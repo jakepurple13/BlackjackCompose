@@ -1,27 +1,35 @@
 package com.programmersbox.blackjackcompose
 
-import android.content.res.Configuration
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.google.accompanist.flowlayout.FlowRow
 import com.programmersbox.blackjackcompose.ui.theme.BlackjackComposeTheme
 import com.programmersbox.funutils.cards.Card
 import com.programmersbox.funutils.cards.Deck
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -51,44 +59,16 @@ private fun List<Card>.toSum() = sortedByDescending { if (it.value > 10) 10 else
         }
     }
 
-@ExperimentalFoundationApi
-@ExperimentalMaterialApi
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun DefaultPreview() {
-    BlackjackComposeTheme {
-        Blackjack()
-    }
-}
-
-@ExperimentalFoundationApi
-@ExperimentalMaterialApi
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun DefaultPreview2() {
-    BlackjackComposeTheme {
-        //Greeting("Android")
-
-        val deck = Deck.defaultDeck()
-
-        LazyVerticalGrid(
-            cells = GridCells.Adaptive(100.dp)
-        ) {
-            items(deck.draw(14)) {
-                PlayingCard(card = it, modifier = Modifier.padding(5.dp))
-            }
-        }
-
-    }
-}
-
 class BlackjackStats {
     var winCount by mutableStateOf(0)
     var loseCount by mutableStateOf(0)
     var drawCount by mutableStateOf(0)
 }
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore("blackjack")
+val WIN_COUNT = intPreferencesKey("wins")
+val LOSE_COUNT = intPreferencesKey("loses")
+val DRAW_COUNT = intPreferencesKey("draws")
 
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
@@ -98,8 +78,17 @@ fun Blackjack() {
     val dealerHand = remember { mutableStateListOf<Card>() }
     var cardCount by remember { mutableStateOf(52) }
 
-    val stats = remember { BlackjackStats() }
+    val scope = rememberCoroutineScope()
+    val scaffoldState = rememberScaffoldState()
 
+    val dataStore = LocalContext.current.dataStore
+    val totalWins by dataStore.data.map { it[WIN_COUNT] ?: 0 }.collectAsState(initial = 0)
+    val totalLoses by dataStore.data.map { it[LOSE_COUNT] ?: 0 }.collectAsState(initial = 0)
+    val totalDraws by dataStore.data.map { it[DRAW_COUNT] ?: 0 }.collectAsState(initial = 0)
+
+    fun updateTotalStat(key: Preferences.Key<Int>, total: Int) = scope.launch { dataStore.edit { it[key] = total + 1 } }
+
+    val stats = remember { BlackjackStats() }
     var playing by remember { mutableStateOf(true) }
 
     val deck = remember {
@@ -117,9 +106,6 @@ fun Blackjack() {
         d
     }
 
-    val scope = rememberCoroutineScope()
-    val scaffoldState = rememberScaffoldState()
-
     fun winCheck() {
         val pSum = playerHand.toSum()
         val dSum = dealerHand.toSum()
@@ -127,25 +113,34 @@ fun Blackjack() {
         val state = when {
             pSum > 21 && dSum <= 21 -> {
                 stats.loseCount++
+                updateTotalStat(LOSE_COUNT, totalLoses)
                 "Lose"
             }
             dSum > 21 && pSum <= 21 -> {
                 stats.winCount++
+                updateTotalStat(WIN_COUNT, totalWins)
                 "Win"
             }
             pSum in (dSum + 1)..21 -> {
                 stats.winCount++
+                updateTotalStat(WIN_COUNT, totalWins)
                 "Win"
             }
             dSum in (pSum + 1)..21 -> {
                 stats.loseCount++
+                updateTotalStat(LOSE_COUNT, totalLoses)
                 "Lose"
             }
             dSum == pSum && dSum <= 21 && pSum <= 21 -> {
                 stats.drawCount++
+                updateTotalStat(DRAW_COUNT, totalDraws)
                 "Got a Draw"
             }
-            else -> "Got a Draw"
+            else -> {
+                stats.drawCount++
+                updateTotalStat(DRAW_COUNT, totalDraws)
+                "Got a Draw"
+            }
         }
 
         scope.launch { scaffoldState.snackbarHostState.showSnackbar("You $state", duration = SnackbarDuration.Short) }
@@ -165,16 +160,26 @@ fun Blackjack() {
         bottomBar = { BottomAppBar { Text("Player has: ${playerHand.toSum()}", style = MaterialTheme.typography.h6) } },
         drawerContent = {
             Scaffold(topBar = { TopAppBar(title = { Text("Stats") }) }) {
-                LazyColumn(
-                    modifier = Modifier.padding(5.dp),
-                    contentPadding = it
+                Column(
+                    modifier = Modifier
+                        .padding(5.dp)
+                        .padding(it),
                 ) {
-                    item {
-                        val typography = MaterialTheme.typography.h5
-                        Text("Times won: ${stats.winCount}", style = typography)
-                        Text("Times lost: ${stats.loseCount}", style = typography)
-                        Text("Times drawn: ${stats.drawCount}", style = typography)
-                    }
+                    val typography = MaterialTheme.typography.body1
+                    Text("Times won: ${stats.winCount}", style = typography)
+                    Text("Times lost: ${stats.loseCount}", style = typography)
+                    Text("Times drawn: ${stats.drawCount}", style = typography)
+                    Divider()
+                    Text("Total Times won: $totalWins", style = typography)
+                    Text("Total Times lost: $totalLoses", style = typography)
+                    Text("Total Times drawn: $totalDraws", style = typography)
+                    Button(
+                        onClick = {
+                            updateTotalStat(WIN_COUNT, -1)
+                            updateTotalStat(LOSE_COUNT, -1)
+                            updateTotalStat(DRAW_COUNT, -1)
+                        }
+                    ) { Text("Reset Saved Stats", style = MaterialTheme.typography.button) }
                 }
             }
         }
@@ -185,21 +190,12 @@ fun Blackjack() {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-
-            LazyRow {
-                items(dealerHand) {
-                    PlayingCard(
-                        card = it,
-                        modifier = Modifier.padding(5.dp)
-                    )
-                }
-            }
+            Hand(dealerHand)
 
             Row(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-
                 Button(
                     onClick = {
                         playerHand.clear()
@@ -236,21 +232,23 @@ fun Blackjack() {
                 ) { Text("Hit", style = MaterialTheme.typography.button) }
             }
 
-            LazyRow {
-                items(playerHand) {
-                    PlayingCard(
-                        card = it,
-                        //onClick = { playerHand.add(deck.draw()) },
-                        modifier = Modifier.padding(5.dp)
-                    )
-                }
-            }
-
+            Hand(playerHand)
         }
     }
 
     dealerHand.addAll(deck.draw(2))
     playerHand.addAll(deck.draw(2))
+}
+
+@ExperimentalMaterialApi
+@Composable
+fun Hand(h: SnapshotStateList<Card>) = LazyRow {
+    items(h) {
+        PlayingCard(
+            card = it,
+            modifier = Modifier.padding(5.dp)
+        )
+    }
 }
 
 @ExperimentalMaterialApi

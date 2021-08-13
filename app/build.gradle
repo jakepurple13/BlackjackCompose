@@ -64,5 +64,7 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     implementation "com.google.accompanist:accompanist-flowlayout:0.16.1"
     implementation "com.github.jakepurple13.HelpfulTools:funutils:10.6.5"
+    implementation "androidx.datastore:datastore:1.0.0"
+    implementation "androidx.datastore:datastore-preferences:1.0.0"
 
 }
