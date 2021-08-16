@@ -217,8 +217,7 @@ fun Blackjack() {
                         scope.launch {
                             drawCard(playerHand, deck)
                             drawCard(dealerHand, deck)
-                            drawCard(playerHand, deck)
-                            drawCard(dealerHand, deck, false)
+                            drawCard(playerHand, deck, false)
                             playing = true
                             dealing = false
                         }
