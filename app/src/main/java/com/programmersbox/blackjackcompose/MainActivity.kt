@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -42,7 +44,7 @@ class MainActivity : ComponentActivity() {
     @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { BlackjackComposeTheme { Surface(color = MaterialTheme.colors.background) { Blackjack() } } }
+        setContent { BlackjackComposeTheme { Surface(color = MaterialTheme.colors.background) { Blackjack(onBackPressedDispatcher) { finish() } } } }
     }
 }
 
@@ -69,7 +71,7 @@ fun Int.animateAsState() = animateIntAsState(targetValue = this).value
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
-fun Blackjack() {
+fun Blackjack(backDispatcher: OnBackPressedDispatcher? = null, onBack: () -> Unit = {}) {
     val playerHand = remember { mutableStateListOf<Card>() }
     val dealerHand = remember { mutableStateListOf<Card>() }
     var cardCount by remember { mutableStateOf(52) }
@@ -144,6 +146,20 @@ fun Blackjack() {
         }
 
         scope.launch { scaffoldState.snackbarHostState.showSnackbar("You $state", duration = SnackbarDuration.Short) }
+    }
+
+    val currentOnBack by rememberUpdatedState(onBack)
+    val backCallback = remember {
+        object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (scaffoldState.drawerState.isOpen) scope.launch { scaffoldState.drawerState.close() } else currentOnBack()
+            }
+        }
+    }
+
+    DisposableEffect(backDispatcher) {
+        backDispatcher?.addCallback(backCallback)
+        onDispose { backCallback.remove() }
     }
 
     Scaffold(
